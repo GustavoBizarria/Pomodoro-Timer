@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pomodoro Timer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Design tokens ─────────────────────────────────────── */
+    :root {
+      --bg:        #0d0f14;
+      --surface:   #161921;
+      --border:    #252936;
+      --text:      #e8eaf2;
+      --muted:     #5a607a;
+      --focus:     #ff6b35;   /* tomato-orange — the tomato theme */
+      --break:     #3dd6ac;   /* mint for breaks */
+      --long:      #7b6cf6;   /* violet for long break */
+      --ring-bg:   #1e2232;
+      --radius:    16px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .logo {
+      font-size: 13px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    header h1 {
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+    header h1 span { color: var(--focus); }
+
+    /* ── Mode tabs ──────────────────────────────────────────── */
+    .mode-tabs {
+      display: flex;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 4px;
+      margin-bottom: 36px;
+    }
+    .mode-btn {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 18px;
+      border: none;
+      border-radius: 50px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .mode-btn.active {
+      background: var(--active-color, var(--focus));
+      color: #fff;
+      box-shadow: 0 0 18px -4px var(--active-color, var(--focus));
+    }
+    .mode-btn:not(.active):hover { color: var(--text); }
+
+    /* ── Timer card ─────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 40px 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    /* ── SVG ring ───────────────────────────────────────────── */
+    .ring-wrap {
+      position: relative;
+      width: 220px;
+      height: 220px;
+    }
+    .ring-wrap svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+    .ring-bg   { fill: none; stroke: var(--ring-bg); stroke-width: 10; }
+    .ring-arc  {
+      fill: none;
+      stroke: var(--accent, var(--focus));
+      stroke-width: 10;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear, stroke 0.4s;
+    }
+    .ring-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+    .time-display {
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(2.8rem, 10vw, 3.6rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      color: var(--text);
+      line-height: 1;
+    }
+    .session-label {
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ── Controls ───────────────────────────────────────────── */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .btn-icon {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--ring-bg);
+      color: var(--muted);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .btn-icon:hover { color: var(--text); border-color: var(--muted); }
+    .btn-icon svg { width: 18px; height: 18px; }
+
+    .btn-main {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0 40px;
+      height: 56px;
+      border-radius: 50px;
+      border: none;
+      background: var(--accent, var(--focus));
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 0 28px -6px var(--accent, var(--focus));
+      transition: all 0.2s;
+    }
+    .btn-main:hover { filter: brightness(1.12); transform: translateY(-1px); }
+    .btn-main:active { transform: translateY(0); }
+
+    /* ── Stats row ──────────────────────────────────────────── */
+    .stats {
+      display: flex;
+      gap: 24px;
+      width: 100%;
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+    }
+    .stat {
+      flex: 1;
+      text-align: center;
+    }
+    .stat-value {
+      font-family: 'Space Mono', monospace;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--accent, var(--focus));
+    }
+    .stat-label {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* ── Tomatoes row ────────────────────────────────────────── */
+    .tomatoes {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .tomato {
+      font-size: 20px;
+      opacity: 0.2;
+      transition: opacity 0.3s;
+    }
+    .tomato.done { opacity: 1; }
+
+    /* ── Settings panel ─────────────────────────────────────── */
+    .settings-toggle {
+      margin-top: 20px;
+      font-size: 12px;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Space Grotesk', sans-serif;
+      transition: color 0.2s;
+    }
+    .settings-toggle:hover { color: var(--text); }
+    .settings-toggle svg { width: 14px; height: 14px; }
+
+    .settings-panel {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      width: 100%;
+      max-width: 420px;
+      margin-top: 12px;
+      gap: 14px;
+      flex-direction: column;
+    }
+    .settings-panel.open { display: flex; }
+    .settings-panel h3 {
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .setting-row label { font-size: 14px; color: var(--text); }
+    .setting-row input[type=number] {
+      width: 72px;
+      padding: 8px 10px;
+      background: var(--ring-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 14px;
+      text-align: center;
+    }
+    .setting-row input[type=number]:focus { outline: 2px solid var(--focus); }
+
+    /* ── Notification toast ─────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 12px 24px;
+      font-size: 14px;
+      color: var(--text);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+      z-index: 99;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Responsive ─────────────────────────────────────────── */
+    @media (max-width: 480px) {
+      .card { padding: 28px 20px; }
+      .ring-wrap { width: 180px; height: 180px; }
+    }
+
+    /* ── Reduced motion ─────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      .ring-arc { transition: stroke-dashoffset 0.1s linear; }
+      .btn-main:hover { transform: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <p class="logo">Focus Tool</p>
+  <h1>Pomodoro <span>Timer</span></h1>
+</header>
+
+<!-- Mode tabs -->
+<div class="mode-tabs" role="tablist">
+  <button class="mode-btn active" data-mode="focus"      role="tab">🍅 Foco</button>
+  <button class="mode-btn"        data-mode="short"      role="tab">☕ Pausa curta</button>
+  <button class="mode-btn"        data-mode="long"       role="tab">🌿 Pausa longa</button>
+</div>
+
+<!-- Timer card -->
+<div class="card">
+
+  <!-- Ring -->
+  <div class="ring-wrap" aria-label="Timer visual">
+    <svg viewBox="0 0 220 220">
+      <circle class="ring-bg" cx="110" cy="110" r="100"/>
+      <circle class="ring-arc" id="ringArc" cx="110" cy="110" r="100"
+              stroke-dasharray="628.3"
+              stroke-dashoffset="0"/>
+    </svg>
+    <div class="ring-center">
+      <div class="time-display" id="timeDisplay" aria-live="polite">25:00</div>
+      <div class="session-label" id="sessionLabel">Sessão 1 de 4</div>
+    </div>
+  </div>
+
+  <!-- Tomatoes -->
+  <div class="tomatoes" id="tomatoRow" aria-label="Sessões completadas"></div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn-icon" id="btnReset" title="Reiniciar" aria-label="Reiniciar timer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.31"/>
+      </svg>
+    </button>
+    <button class="btn-main" id="btnStartStop">INICIAR</button>
+    <button class="btn-icon" id="btnSkip" title="Pular" aria-label="Pular para próxima sessão">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-value" id="statPomodoros">0</div>
+      <div class="stat-label">Pomodoros</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="statFocusTime">0m</div>
+      <div class="stat-label">Foco total</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="statStreak">0</div>
+      <div class="stat-label">Sequência</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Settings toggle -->
+<button class="settings-toggle" id="settingsToggle" aria-expanded="false">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>
+  Configurações
+</button>
+
+<!-- Settings panel -->
+<div class="settings-panel" id="settingsPanel" role="region" aria-label="Configurações">
+  <h3>Duração (minutos)</h3>
+  <div class="setting-row">
+    <label for="setFocus">🍅 Foco</label>
+    <input type="number" id="setFocus" min="1" max="90" value="25" />
+  </div>
+  <div class="setting-row">
+    <label for="setShort">☕ Pausa curta</label>
+    <input type="number" id="setShort" min="1" max="30" value="5" />
+  </div>
+  <div class="setting-row">
+    <label for="setLong">🌿 Pausa longa</label>
+    <input type="number" id="setLong" min="1" max="60" value="15" />
+  </div>
+  <div class="setting-row">
+    <label for="setCycles">Ciclos até pausa longa</label>
+    <input type="number" id="setCycles" min="2" max="8" value="4" />
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast" role="alert" aria-live="assertive"></div>
+
+<script>
+  /* ── State ──────────────────────────────────────────────── */
+  const CIRCUMFERENCE = 2 * Math.PI * 100; // 628.3
+
+  const state = {
+    mode: 'focus',       // focus | short | long
+    running: false,
+    secondsLeft: 25 * 60,
+    totalSeconds: 25 * 60,
+    pomodorosTotal: 0,
+    focusMinutes: 0,
+    streak: 0,
+    cycleCount: 0,       // completed focus sessions in current cycle
+    sessionNumber: 1,
+  };
+
+  const cfg = () => ({
+    focus:  parseInt(document.getElementById('setFocus').value)  || 25,
+    short:  parseInt(document.getElementById('setShort').value)  || 5,
+    long:   parseInt(document.getElementById('setLong').value)   || 15,
+    cycles: parseInt(document.getElementById('setCycles').value) || 4,
+  });
+
+  const COLORS = { focus: '#ff6b35', short: '#3dd6ac', long: '#7b6cf6' };
+
+  let ticker = null;
+
+  /* ── DOM refs ────────────────────────────────────────────── */
+  const timeDisplay   = document.getElementById('timeDisplay');
+  const sessionLabel  = document.getElementById('sessionLabel');
+  const ringArc       = document.getElementById('ringArc');
+  const btnStartStop  = document.getElementById('btnStartStop');
+  const btnReset      = document.getElementById('btnReset');
+  const btnSkip       = document.getElementById('btnSkip');
+  const tomatoRow     = document.getElementById('tomatoRow');
+  const statPomodoros = document.getElementById('statPomodoros');
+  const statFocusTime = document.getElementById('statFocusTime');
+  const statStreak    = document.getElementById('statStreak');
+  const toastEl       = document.getElementById('toast');
+  const settingsToggle = document.getElementById('settingsToggle');
+  const settingsPanel  = document.getElementById('settingsPanel');
+  const modeBtns = document.querySelectorAll('.mode-btn');
+
+  /* ── Accent color helper ─────────────────────────────────── */
+  function setAccent(mode) {
+    const c = COLORS[mode];
+    document.documentElement.style.setProperty('--accent', c);
+    document.documentElement.style.setProperty('--active-color', c);
+  }
+
+  /* ── Render ──────────────────────────────────────────────── */
+  function renderTime() {
+    const m = Math.floor(state.secondsLeft / 60).toString().padStart(2, '0');
+    const s = (state.secondsLeft % 60).toString().padStart(2, '0');
+    timeDisplay.textContent = `${m}:${s}`;
+    document.title = `${m}:${s} — Pomodoro`;
+
+    // Ring arc
+    const progress = state.secondsLeft / state.totalSeconds;
+    const offset = CIRCUMFERENCE * (1 - progress);
+    ringArc.style.strokeDashoffset = offset;
+  }
+
+  function renderTomatoes() {
+    const total = cfg().cycles;
+    tomatoRow.innerHTML = '';
+    for (let i = 0; i < total; i++) {
+      const t = document.createElement('span');
+      t.className = 'tomato' + (i < state.cycleCount ? ' done' : '');
+      t.textContent = '🍅';
+      t.setAttribute('aria-label', i < state.cycleCount ? 'sessão completa' : 'sessão pendente');
+      tomatoRow.appendChild(t);
+    }
+  }
+
+  function renderSessionLabel() {
+    const labels = { focus: 'Foco', short: 'Pausa curta', long: 'Pausa longa' };
+    sessionLabel.textContent = state.mode === 'focus'
+      ? `Sessão ${state.cycleCount + 1} de ${cfg().cycles}`
+      : labels[state.mode];
+  }
+
+  function renderStats() {
+    statPomodoros.textContent = state.pomodorosTotal;
+    statFocusTime.textContent = state.focusMinutes >= 60
+      ? `${Math.floor(state.focusMinutes / 60)}h ${state.focusMinutes % 60}m`
+      : `${state.focusMinutes}m`;
+    statStreak.textContent = state.streak;
+  }
+
+  function render() {
+    renderTime();
+    renderTomatoes();
+    renderSessionLabel();
+    renderStats();
+    btnStartStop.textContent = state.running ? 'PAUSAR' : 'INICIAR';
+  }
+
+  /* ── Timer logic ─────────────────────────────────────────── */
+  function startTimer() {
+    if (state.running) return;
+    state.running = true;
+    ticker = setInterval(tick, 1000);
+    render();
+  }
+
+  function pauseTimer() {
+    state.running = false;
+    clearInterval(ticker);
+    render();
+  }
+
+  function tick() {
+    state.secondsLeft--;
+    if (state.secondsLeft <= 0) {
+      onSessionEnd();
+    } else {
+      renderTime();
+    }
+  }
+
+  function onSessionEnd() {
+    clearInterval(ticker);
+    state.running = false;
+
+    if (state.mode === 'focus') {
+      state.pomodorosTotal++;
+      state.focusMinutes += cfg().focus;
+      state.streak++;
+      state.cycleCount++;
+
+      if (state.cycleCount >= cfg().cycles) {
+        state.cycleCount = 0;
+        switchMode('long');
+        showToast('🌿 Ótimo trabalho! Hora de uma pausa longa.');
+      } else {
+        switchMode('short');
+        showToast('☕ Pomodoro completo! Faça uma pausa.');
+      }
+    } else {
+      switchMode('focus');
+      showToast('🍅 Pausa encerrada. Hora de focar!');
+    }
+
+    playBeep();
+    renderStats();
+  }
+
+  function switchMode(mode, manual = false) {
+    state.mode = mode;
+    if (manual) {
+      pauseTimer();
+      if (mode === 'focus') { state.cycleCount = 0; }
+    }
+
+    const durations = { focus: cfg().focus, short: cfg().short, long: cfg().long };
+    state.totalSeconds = durations[mode] * 60;
+    state.secondsLeft  = state.totalSeconds;
+
+    // Sync tab highlight
+    modeBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+    setAccent(mode);
+    render();
+  }
+
+  function resetTimer() {
+    pauseTimer();
+    const durations = { focus: cfg().focus, short: cfg().short, long: cfg().long };
+    state.totalSeconds = durations[state.mode] * 60;
+    state.secondsLeft  = state.totalSeconds;
+    render();
+  }
+
+  function skipSession() {
+    clearInterval(ticker);
+    state.running = false;
+    onSessionEnd();
+  }
+
+  /* ── Beep ────────────────────────────────────────────────── */
+  function playBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [0, 0.25, 0.5].forEach(delay => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0, ctx.currentTime + delay);
+        gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + delay + 0.05);
+        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + delay + 0.35);
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + 0.4);
+      });
+    } catch(e) { /* silent fail */ }
+  }
+
+  /* ── Toast ───────────────────────────────────────────────── */
+  let toastTimeout;
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => toastEl.classList.remove('show'), 3500);
+  }
+
+  /* ── Event listeners ─────────────────────────────────────── */
+  btnStartStop.addEventListener('click', () => {
+    state.running ? pauseTimer() : startTimer();
+  });
+  btnReset.addEventListener('click', () => { resetTimer(); });
+  btnSkip.addEventListener('click', skipSession);
+
+  modeBtns.forEach(btn => {
+    btn.addEventListener('click', () => switchMode(btn.dataset.mode, true));
+  });
+
+  settingsToggle.addEventListener('click', () => {
+    const open = settingsPanel.classList.toggle('open');
+    settingsToggle.setAttribute('aria-expanded', open);
+    if (!open) resetTimer(); // apply new values on close
+  });
+
+  // Re-apply settings on input change
+  document.querySelectorAll('.settings-panel input').forEach(inp => {
+    inp.addEventListener('change', () => { if (!state.running) resetTimer(); });
+  });
+
+  /* ── Keyboard shortcuts ──────────────────────────────────── */
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.code === 'Space') { e.preventDefault(); btnStartStop.click(); }
+    if (e.code === 'KeyR')  resetTimer();
+    if (e.code === 'KeyS')  skipSession();
+  });
+
+  /* ── Init ────────────────────────────────────────────────── */
+  setAccent('focus');
+  render();
+</script>
+</body>
+</html>
