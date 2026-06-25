@@ -1,1 +1,296 @@
+    :root {
+      --bg:        #0d0f14;
+      --surface:   #161921;
+      --border:    #252936;
+      --text:      #e8eaf2;
+      --muted:     #5a607a;
+      --focus:     #ff6b35;   /* tomato-orange — the tomato theme */
+      --break:     #3dd6ac;   /* mint for breaks */
+      --long:      #7b6cf6;   /* violet for long break */
+      --ring-bg:   #1e2232;
+      --radius:    16px;
+    }
 
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .logo {
+      font-size: 13px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    header h1 {
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+    header h1 span { color: var(--focus); }
+
+    /* ── Mode tabs ──────────────────────────────────────────── */
+    .mode-tabs {
+      display: flex;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 4px;
+      margin-bottom: 36px;
+    }
+    .mode-btn {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 18px;
+      border: none;
+      border-radius: 50px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .mode-btn.active {
+      background: var(--active-color, var(--focus));
+      color: #fff;
+      box-shadow: 0 0 18px -4px var(--active-color, var(--focus));
+    }
+    .mode-btn:not(.active):hover { color: var(--text); }
+
+    /* ── Timer card ─────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 40px 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    /* ── SVG ring ───────────────────────────────────────────── */
+    .ring-wrap {
+      position: relative;
+      width: 220px;
+      height: 220px;
+    }
+    .ring-wrap svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+    .ring-bg   { fill: none; stroke: var(--ring-bg); stroke-width: 10; }
+    .ring-arc  {
+      fill: none;
+      stroke: var(--accent, var(--focus));
+      stroke-width: 10;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear, stroke 0.4s;
+    }
+    .ring-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+    .time-display {
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(2.8rem, 10vw, 3.6rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      color: var(--text);
+      line-height: 1;
+    }
+    .session-label {
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ── Controls ───────────────────────────────────────────── */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .btn-icon {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--ring-bg);
+      color: var(--muted);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .btn-icon:hover { color: var(--text); border-color: var(--muted); }
+    .btn-icon svg { width: 18px; height: 18px; }
+
+    .btn-main {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0 40px;
+      height: 56px;
+      border-radius: 50px;
+      border: none;
+      background: var(--accent, var(--focus));
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 0 28px -6px var(--accent, var(--focus));
+      transition: all 0.2s;
+    }
+    .btn-main:hover { filter: brightness(1.12); transform: translateY(-1px); }
+    .btn-main:active { transform: translateY(0); }
+
+    /* ── Stats row ──────────────────────────────────────────── */
+    .stats {
+      display: flex;
+      gap: 24px;
+      width: 100%;
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+    }
+    .stat {
+      flex: 1;
+      text-align: center;
+    }
+    .stat-value {
+      font-family: 'Space Mono', monospace;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--accent, var(--focus));
+    }
+    .stat-label {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* ── Tomatoes row ────────────────────────────────────────── */
+    .tomatoes {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .tomato {
+      font-size: 20px;
+      opacity: 0.2;
+      transition: opacity 0.3s;
+    }
+    .tomato.done { opacity: 1; }
+
+    /* ── Settings panel ─────────────────────────────────────── */
+    .settings-toggle {
+      margin-top: 20px;
+      font-size: 12px;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Space Grotesk', sans-serif;
+      transition: color 0.2s;
+    }
+    .settings-toggle:hover { color: var(--text); }
+    .settings-toggle svg { width: 14px; height: 14px; }
+
+    .settings-panel {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      width: 100%;
+      max-width: 420px;
+      margin-top: 12px;
+      gap: 14px;
+      flex-direction: column;
+    }
+    .settings-panel.open { display: flex; }
+    .settings-panel h3 {
+      font-size: 13px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .setting-row label { font-size: 14px; color: var(--text); }
+    .setting-row input[type=number] {
+      width: 72px;
+      padding: 8px 10px;
+      background: var(--ring-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 14px;
+      text-align: center;
+    }
+    .setting-row input[type=number]:focus { outline: 2px solid var(--focus); }
+
+    /* ── Notification toast ─────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 12px 24px;
+      font-size: 14px;
+      color: var(--text);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+      z-index: 99;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Responsive ─────────────────────────────────────────── */
+    @media (max-width: 480px) {
+      .card { padding: 28px 20px; }
+      .ring-wrap { width: 180px; height: 180px; }
+    }
+
+    /* ── Reduced motion ─────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      .ring-arc { transition: stroke-dashoffset 0.1s linear; }
+      .btn-main:hover { transform: none; }
+    }
